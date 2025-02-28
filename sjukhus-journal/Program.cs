@@ -1,23 +1,47 @@
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
+using sjukhus_journal.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddDbContext<JournalDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=journal.db"));
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
+    var context = scope.ServiceProvider.GetRequiredService<JournalDbContext>();
+    context.Database.EnsureCreated(); 
+
+    if (!context.Journaler.Any())
+    {
+        context.Journaler.AddRange(new List<Journal>
+        {
+            new Journal { PatientId = 1, Anteckning = "Vi testar"},
+            new Journal { PatientId = 2, Anteckning = "Andra anteckningen" },
+            new Journal { PatientId = 3, Anteckning = "Tredje anteckningen" },
+        });
+        context.SaveChanges(); 
+    }
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("Sjukhus Journal Databas")
+            .WithTheme(ScalarTheme.Mars); 
+    });
+}
 
 app.Run();
