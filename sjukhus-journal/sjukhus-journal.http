@@ -1,0 +1,6 @@
+@sjukhus_journal_HostAddress = http://localhost:5020
+
+GET {{sjukhus_journal_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
